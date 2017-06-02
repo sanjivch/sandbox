@@ -16,7 +16,18 @@ class boundary{
 class PID{
   public: 
     double PV, SP, CO;
-    double error, Kc, Ti, Td;
+    double error, Kc=0.5, Ti=2.0, Td;
+    
+    double controlPID(double dt, double pv, double sp, double integral){
+      
+      error = pv - sp;
+      CO = Kc*error + Kc*integral/Ti;
+      return CO/100.0;
+    }
+    
+    double errorIntegral(double dt, double pv, double sp, double iError){
+       return iError+(pv-sp)*dt;
+    }
 };
 
 //Pipe Class
@@ -83,7 +94,9 @@ int main()
   //cout << "hi\n";
   srand(time(NULL));
   double deltaT = 0.1;
-  double flowIn, flowOut, tankLevel =0.0, tankPressure = 101.325;
+  double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325;
+  
+  double intError = 0.0;
   
   //Object definitions
   boundary b1, b2;
@@ -98,7 +111,7 @@ int main()
   v1.Cvmax = 50;
   pid1.CO = 0.5;
   
-  v2. Cvmax =25.3;
+  v2. Cvmax =55.3;
   pid2.CO = 0.75;
   
   t1.diaInner = 2.1;
@@ -113,17 +126,24 @@ int main()
   b2.pressureOut = 101.325;
   
   
+  pid2.SP = 2.0;
+  
+  
   
   
   
   //Object linking and connections
-  for(double t=0.0;t<100.0;t+=deltaT){
+  for(double t=0.0;t<1000.0;t+=deltaT){
     flowIn = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.CO);
-    flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.CO);
+    flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
     tankLevel = t1.massAccumulated(deltaT, flowIn, flowOut, tankLevel);
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
     
-    cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< endl;
+    intError = pid2.errorIntegral(deltaT, tankLevel, pid2.SP, intError);
+    
+    
+    
+    cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<pid2.CO<< endl;
     
   }
   
