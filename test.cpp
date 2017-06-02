@@ -15,7 +15,8 @@ class boundary{
 //PID Controller Class
 class PID{
   public: 
-    double CO;
+    double PV, SP, CO;
+    double error, Kc, Ti, Td;
 };
 
 //Pipe Class
@@ -60,8 +61,14 @@ class tank{
     double diaInner, length, volume;
     double opPressure;
     
+    double portInHeight, portOutHeight;//in absolute terms from the bottom of the tank [m]
+    
     double getVolume(double di, double len){
       return PI*di*di*len*0.25;
+    }
+    
+    double getOpPressure(double inH, double lev){
+      return 101.325+ (lev-inH)*1000*9.80665*0.001;
     }
     
     double massAccumulated(double dt, double fin, double fout, double h){
@@ -97,8 +104,11 @@ int main()
   t1.diaInner = 2.1;
   t1.length = 5.0;
   
+  t1.portInHeight = 3.1;
+  t1.portOutHeight = 0.5;
+  
   t1.volume = t1.getVolume(t1.diaInner, t1.length);
-  t1.opPressure = 101.325;
+  //t1.opPressure = t1.getOpPressure();
   b1.pressureIn = 120.1; //in kPa
   b2.pressureOut = 101.325;
   
@@ -108,10 +118,11 @@ int main()
   
   //Object linking and connections
   for(double t=0.0;t<100.0;t+=deltaT){
-    flowIn = v1.getflowIn(b1.pressureIn, t1.opPressure, pid1.CO);
+    flowIn = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.CO);
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.CO);
     tankLevel = t1.massAccumulated(deltaT, flowIn, flowOut, tankLevel);
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
+    
     cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< endl;
     
   }
