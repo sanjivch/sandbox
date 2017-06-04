@@ -7,6 +7,7 @@ using namespace std;
 class boundary{
   public:
     double pressureIn;
+    double temperatureIn;
     double pressureOut;
 
 
@@ -67,10 +68,18 @@ class valve : public pipe{
 
 };
 
+class heatxch : public pipe{
+  public:
+      double heatDuty;
+      double TOut;
+
+};
+
 class tank{
   public:
     double diaInner, length, volume;
     double opPressure;
+    double heatIn;
 
     double portInHeight, portOutHeight;//in absolute terms from the bottom of the tank [m]
 
@@ -86,6 +95,10 @@ class tank{
       return h+(dt*(fin-fout))/(1000.0*1.5);
     }
 
+    double heatAccumulated(double dt, double fin, double fout, double q){
+        return (dt*q/4187.0);
+    }
+
 };
 
 
@@ -94,7 +107,7 @@ int main()
   //cout << "hi\n";
  // srand(time(NULL));
   double deltaT = 0.1;
-  double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325;
+  double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0;
 
   double intError = 0.0, intError2 = 0.0;
 
@@ -120,6 +133,8 @@ int main()
   t1.portInHeight = 3.1;
   t1.portOutHeight = 0.5;
 
+  t1.heatIn = 100.0;
+
   t1.volume = t1.getVolume(t1.diaInner, t1.length);
   //t1.opPressure = t1.getOpPressure();
   b1.pressureIn = 120.1; //in kPa
@@ -143,13 +158,14 @@ int main()
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
     tankLevel = t1.massAccumulated(deltaT, flowIn, flowOut, tankLevel);
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
+    tankTemperature+= t1.heatAccumulated(deltaT, flowIn, flowOut, t1.heatIn);
 
     intError = pid2.errorIntegral(deltaT, tankLevel, pid2.SP, intError);
     intError2 = pid1.errorIntegral(deltaT, flowIn, pid1.SP, intError2);
 
 
 
-    cout << t<< " "<<flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<pid2.CO<< endl;
+    cout << t<< " "<<flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<< endl;
 
   }
 
