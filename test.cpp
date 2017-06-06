@@ -98,7 +98,7 @@ class tank{
     }
 
     double enthalpyAccumulated(double dt, double fin, double fout, double tankT, double q, double mass, double enthalpy){
-      return dt*((fin*4.187*(40-25))-(fout*4.187*(tankT -25))+enthalpy;
+      return dt*((fin*4.187*(40-25))-(fout*4.187*(tankT -25)))+enthalpy;
     }
     
     double massAccumulated(double dt, double fin, double fout, double mass){
@@ -175,7 +175,7 @@ int main()
     tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
-   // v2.tempIn = v2.tempOut = tankTemperature;
+    v2.tempIn = v2.tempOut = tankTemperature;
 
     intError = pid2.errorIntegral(deltaT, tankLevel, pid2.SP, intError);
     intError2 = pid1.errorIntegral(deltaT, flowIn, pid1.SP, intError2);
