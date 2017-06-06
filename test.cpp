@@ -97,11 +97,8 @@ class tank{
       return h+(dt*(fin-fout))/(1000.0*1.5);
     }
 
-    double heatAccumulated(double dt, double fin, double fout, double tankT, double q, double mass){
-        if(q == 0.0 && fout == 0.0 && tankT > 40.01)
-          return 40.0;
-        else
-          return tankT + (dt*((fin*4.187*(40-25)))-(fout*4.187*(tankT -25)))/(4.187*mass);
+    double enthalpyAccumulated(double dt, double fin, double fout, double tankT, double q, double mass, double enthalpy){
+      return dt*((fin*4.187*(40-25))-(fout*4.187*(tankT -25))+enthalpy;
     }
     
     double massAccumulated(double dt, double fin, double fout, double mass){
@@ -116,7 +113,7 @@ int main()
   //cout << "hi\n";
  // srand(time(NULL));
   double deltaT = 0.1;
-  double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0;;
+  double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
 
   double intError = 0.0, intError2 = 0.0;
 
@@ -143,6 +140,7 @@ int main()
   t1.portOutHeight = 0.5;
 
   t1.heatIn = 0.0;
+  
   
 
   t1.volume = t1.getVolume(t1.diaInner, t1.length);
@@ -173,10 +171,11 @@ int main()
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
     
     mass = t1.massAccumulated(deltaT,flowIn, flowOut, mass);
-    tankTemperature = t1.heatAccumulated(deltaT, flowIn, flowOut, tankTemperature, t1.heatIn, mass);
+    enthalpyIn = t1.enthalpyAccumulated(deltaT, flowIn, flowOut, tankTemperature, t1.heatIn, mass, enthalpyIn);
+    tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
-    v2.tempIn = v2.tempOut = tankTemperature;
+   // v2.tempIn = v2.tempOut = tankTemperature;
 
     intError = pid2.errorIntegral(deltaT, tankLevel, pid2.SP, intError);
     intError2 = pid1.errorIntegral(deltaT, flowIn, pid1.SP, intError2);
@@ -184,6 +183,7 @@ int main()
 
 
     cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<  endl;
+    //cout << enthalpyIn << " " << tankTemperature  << endl;
 
   }
 
