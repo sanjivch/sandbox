@@ -72,9 +72,26 @@ class valve : public pipe{
 
 class heatxch : public pipe{
   public:
+      double fitRes;
       double heatDuty;
-      double TOut;
+      double Tin, TOut;
+      
+      double getflowIn(double p1, double p2, double fitr){//Overriding the method for flow calculation
+      
+      return fitr*sqrt(p1-p2);
+      }
+      
+      double getOutletTemp(double dt, double fin, double T, double q){
+        return T +(dt*q/(fin*4.187));
+      }
+    
 
+};
+
+class pump : public pipe{
+  public:
+      double a0, a1, a2; //Pump curve coefficients
+      
 };
 
 class tank{
@@ -114,14 +131,17 @@ int main()
  // srand(time(NULL));
   double deltaT = 0.1;
   double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
+  
+  double flowIn2 = 0.0;
 
   double intError = 0.0, intError2 = 0.0;
 
   //Object definitions
-  boundary b1, b2;
+  boundary b1, b2, b3, b4;
   valve v1, v2;
   PID pid1, pid2;
   tank t1;
+  heatxch h1;
 
   //Object inputs
   v1.dInner = 10.0;
@@ -157,6 +177,19 @@ int main()
   pid1.Ti = 1.0;
   pid2.Kc = 0.5;
   pid2.Ti = 2.0;
+  
+  b3.pressureIn = 150.0;
+  b3.temperatureIn = 50.0;
+  
+  b4.pressureOut = 120.0;
+  
+  h1.fitRes =100.0;
+  h1.heatDuty = 100.0;
+  
+  h1.Tin = h1.TOut = b3.temperatureIn;  //Initial exit temperature of the hxer 
+  
+  
+  
 
 
 
@@ -175,14 +208,18 @@ int main()
     tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
-    v2.tempIn = v2.tempOut = tankTemperature;
+   // v2.tempIn = v2.tempOut = tankTemperature;
 
     intError = pid2.errorIntegral(deltaT, tankLevel, pid2.SP, intError);
     intError2 = pid1.errorIntegral(deltaT, flowIn, pid1.SP, intError2);
+    
+    flowIn2 = h1.getflowIn(b3.pressureIn, b4.pressureOut, h1.fitRes);
+    
+    h1.TOut = h1.getOutletTemp(deltaT,flowIn2,h1.TOut,h1.heatDuty);
+    
+    cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
-
-
-    cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<  endl;
+    //cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
 
   }
