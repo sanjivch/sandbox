@@ -101,6 +101,7 @@ class tank{
     double heatIn;
 
     double portInHeight, portOutHeight;//in absolute terms from the bottom of the tank [m]
+    double portInHeight2;
 
     double getVolume(double di, double len){
       return PI*di*di*len*0.25;
@@ -114,8 +115,8 @@ class tank{
       return h+(dt*(fin-fout))/(1000.0*1.5);
     }
 
-    double enthalpyAccumulated(double dt, double fin, double fout, double tankT, double q, double mass, double enthalpy){
-      return dt*((fin*4.187*(40-25))-(fout*4.187*(tankT -25)))+enthalpy;
+    double enthalpyAccumulated(double dt, double fin1, double fin2, double fout, double tankT, double q, double mass, double enthalpy){
+      return dt*((fin1*4.187*(40-25) + fin2*4.187*(60-25))-(fout*4.187*(tankT -25))+q)+enthalpy;
     }
     
     double massAccumulated(double dt, double fin, double fout, double mass){
@@ -132,13 +133,13 @@ int main()
   double deltaT = 0.1;
   double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
   
-  double flowIn2 = 0.0;
+  double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0;
 
   double intError = 0.0, intError2 = 0.0;
 
   //Object definitions
-  boundary b1, b2, b3, b4;
-  valve v1, v2;
+  boundary b1, b2, b3, b4, b5;
+  valve v1, v2, v3;
   PID pid1, pid2;
   tank t1;
   heatxch h1;
@@ -147,19 +148,24 @@ int main()
   v1.dInner = 10.0;
   v1.dOuter = 11.0;
   v1.pipeLen = 2.0;
-  v1.Cvmax = 50;
+  v1.Cvmax = 50.0;
   pid1.CO = 0.5;
 
-  v2. Cvmax =55.3;
+  v2.Cvmax =55.3;
   pid2.CO = 0.75;
+  
+  v3.Cvmax = 40.0;
 
   t1.diaInner = 2.1;
   t1.length = 5.0;
 
   t1.portInHeight = 3.1;
+  t1.portInHeight2 = 3.2;
   t1.portOutHeight = 0.5;
+  
+  
 
-  t1.heatIn = 0.0;
+  t1.heatIn = -100.0;
   
   
 
@@ -183,6 +189,9 @@ int main()
   
   b4.pressureOut = 120.0;
   
+  b5.pressureIn = 125.6;
+  b5.temperatureIn = 60.0;
+  
   h1.fitRes =100.0;
   h1.heatDuty = 100.0;
   
@@ -197,14 +206,15 @@ int main()
 
   //Object linking and connections
   for(double t=0.0;t<1500.0;t+=deltaT){
-    flowIn = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.controlPID(deltaT,flowIn, pid1.SP, intError2));
-    
+    flowIn1 = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.controlPID(deltaT,flowIn, pid1.SP, intError2));
+    flowIn3 = v3.getflowIn(b5.pressureIn,t1.getOpPressure(t1.portInHeight2, tankLevel),0.5);
+    flowIn = flowIn1 + flowIn3;
     v1.tempIn = v1. tempOut = b1.temperatureIn;
     tankLevel = t1.levelAccumulated(deltaT, flowIn, flowOut, tankLevel);
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
     
     mass = t1.massAccumulated(deltaT,flowIn, flowOut, mass);
-    enthalpyIn = t1.enthalpyAccumulated(deltaT, flowIn, flowOut, tankTemperature, t1.heatIn, mass, enthalpyIn);
+    enthalpyIn = t1.enthalpyAccumulated(deltaT, flowIn1,flowIn3, flowOut, tankTemperature, t1.heatIn, mass, enthalpyIn);
     tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
@@ -217,9 +227,9 @@ int main()
     
     h1.TOut = h1.getOutletTemp(deltaT,flowIn2,h1.TOut,h1.heatDuty);
     
-    cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
+    //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
-    //cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<  endl;
+    cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
 
   }
