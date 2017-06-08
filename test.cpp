@@ -94,7 +94,11 @@ class pump : public pipe{
       double speed;
       
       double getflowIn(double p1, double p2, double a, double b, double c, double ns){
-        return (-b - sqrt(b*b-(4*a*(c-(p1-p2)))))/(2*a);
+        
+        b*= ns;
+        c*= ns*ns;
+        
+        return (-b - sqrt(b*b-(4*a*(c-(p1-p2)))))/(2*a);// Affinity laws
       }
       
 };
@@ -179,7 +183,7 @@ int main()
 
   t1.volume = t1.getVolume(t1.diaInner, t1.length);
   //t1.opPressure = t1.getOpPressure();
-  pu1.speed = 1.0;
+  pu1.speed = 0.95;
   pu1.a0 = -0.002587798;
   pu1.a1 = -0.036577381;
   pu1.a2 = 165.9125;
@@ -210,12 +214,6 @@ int main()
   
   h1.Tin = h1.TOut = b3.temperatureIn;  //Initial exit temperature of the hxer 
   
-  
-  
-
-
-
-
 
   //Object linking and connections
   for(double t=0.0;t<1500.0;t+=deltaT){
