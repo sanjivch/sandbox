@@ -91,6 +91,11 @@ class heatxch : public pipe{
 class pump : public pipe{
   public:
       double a0, a1, a2; //Pump curve coefficients
+      double speed;
+      
+      double getflowIn(double p1, double p2, double a, double b, double c, double ns){
+        return (-b - sqrt(b*b-(4*a*(c-(p1-p2)))))/(2*a);
+      }
       
 };
 
@@ -133,9 +138,11 @@ int main()
   double deltaT = 0.1;
   double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
   
-  double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0;
+  double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0, flowIn4 = 0.0;
 
   double intError = 0.0, intError2 = 0.0;
+  
+  double head = 165.9;
 
   //Object definitions
   boundary b1, b2, b3, b4, b5;
@@ -143,6 +150,7 @@ int main()
   PID pid1, pid2;
   tank t1;
   heatxch h1;
+  pump pu1;
 
   //Object inputs
   v1.dInner = 10.0;
@@ -171,6 +179,11 @@ int main()
 
   t1.volume = t1.getVolume(t1.diaInner, t1.length);
   //t1.opPressure = t1.getOpPressure();
+  pu1.speed = 1.0;
+  pu1.a0 = -0.002587798;
+  pu1.a1 = -0.036577381;
+  pu1.a2 = 165.9125;
+  
   b1.pressureIn = 120.1; //in kPa
   b2.pressureOut = 101.325;
   
@@ -227,10 +240,18 @@ int main()
     
     h1.TOut = h1.getOutletTemp(deltaT,flowIn2,h1.TOut,h1.heatDuty);
     
+    head-=0.01;
+    if(head < 110.0)
+      head = 110.0;
+    
+    flowIn4 = pu1.getflowIn(head, 0.01, pu1.a0, pu1.a1, pu1.a2, pu1.speed);
+    
     //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
-    cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
+    //cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
+    
+    cout <<head << " "<< flowIn4<< endl;
 
   }
 
