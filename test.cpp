@@ -3,12 +3,32 @@
 #define PI 3.14
 using namespace std;
 
+class composition{
+  public:
+    double z[3];
+    
+    double checkSum(){
+      double sum = 0.0;
+      for(int i = 0; i< 3; i++){
+        sum+=z[i];
+      }
+      
+      if(sum == 1.0)
+        return 1.0;
+      else 
+        return -1.0;
+    }
+};
+
+
 //Boundary Class
-class boundary{
+class boundary: public composition{
   public:
     double pressureIn;
     double temperatureIn;
     double pressureOut;
+    
+    
 
 
 };
@@ -32,7 +52,7 @@ class PID{
 };
 
 //Pipe Class
-class pipe{
+class pipe: public composition{
   public:
     double dInner, dOuter;
     double pipeLen;
@@ -46,7 +66,7 @@ class pipe{
 };
 
 //Valve inherits Pipe class
-class valve : public pipe{
+class valve : public pipe, public composition{
   public:
     double Cvmax;
 
@@ -70,7 +90,7 @@ class valve : public pipe{
 
 };
 
-class heatxch : public pipe{
+class heatxch : public pipe, public composition{
   public:
       double fitRes;
       double heatDuty;
@@ -88,22 +108,34 @@ class heatxch : public pipe{
 
 };
 
-class pump : public pipe{
+class pump : public pipe, public composition{
   public:
+      
+      int runFlag; //0 = Stop; 1= Run
       double a0, a1, a2; //Pump curve coefficients
       double speed;
       
-      double getflowIn(double p1, double p2, double a, double b, double c, double ns){
-        
-        b*= ns;
-        c*= ns*ns;
+      
+      double getflowIn(double p1, double p2, double a, double b, double c, double ns, int flag){
+        if(flag != 0 ){
+          b*= ns;
+          c*= ns*ns;
         
         return (-b - sqrt(b*b-(4*a*(c-(p1-p2)))))/(2*a);// Affinity laws
+          
+        }
+        
+        return 100*sqrt(p1-p2);
+        
+      }
+      
+      double getPowerConsumed(){
+        return 0;
       }
       
 };
 
-class tank{
+class tank: public composition{
   public:
     double diaInner, length, volume;
     double opPressure;
@@ -130,6 +162,10 @@ class tank{
     
     double massAccumulated(double dt, double fin, double fout, double mass){
       return mass + (dt*(fin-fout));
+    }
+    
+    double calcComposition(){
+      return 0;
     }
 
 };
@@ -187,11 +223,18 @@ int main()
   pu1.a0 = -0.002587798;
   pu1.a1 = -0.036577381;
   pu1.a2 = 165.9125;
+  pu1.runFlag = 0;
   
   b1.pressureIn = 120.1; //in kPa
   b2.pressureOut = 101.325;
   
   b1.temperatureIn = 40.0;
+  b1.z[0] = 0.2;
+  b1.z[1] = 0.5;
+  b1.z[2] = 0.3;
+  
+  cout << b1.checkSum()<< endl;
+  
 
   pid1.SP = 105.0;
   pid2.SP = 2.0;
@@ -203,6 +246,12 @@ int main()
   
   b3.pressureIn = 150.0;
   b3.temperatureIn = 50.0;
+  
+  b3.z[0] = 0.5;
+  b3.z[1] = 0.1;
+  b3.z[2] = 0.4;
+  
+  cout << b3.checkSum()<<endl;
   
   b4.pressureOut = 120.0;
   
@@ -242,7 +291,7 @@ int main()
     if(head < 110.0)
       head = 110.0;
     
-    flowIn4 = pu1.getflowIn(head, 0.01, pu1.a0, pu1.a1, pu1.a2, pu1.speed);
+    flowIn4 = pu1.getflowIn(head, 0.01, pu1.a0, pu1.a1, pu1.a2, pu1.speed, pu1.runFlag);
     
     //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
