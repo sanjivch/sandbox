@@ -66,7 +66,7 @@ class pipe: public composition{
 };
 
 //Valve inherits Pipe class
-class valve : public pipe, public composition{
+class valve : public pipe{
   public:
     double Cvmax;
 
@@ -90,7 +90,7 @@ class valve : public pipe, public composition{
 
 };
 
-class heatxch : public pipe, public composition{
+class heatxch : public pipe{
   public:
       double fitRes;
       double heatDuty;
@@ -108,7 +108,7 @@ class heatxch : public pipe, public composition{
 
 };
 
-class pump : public pipe, public composition{
+class pump : public pipe{
   public:
       
       int runFlag; //0 = Stop; 1= Run
@@ -164,8 +164,15 @@ class tank: public composition{
       return mass + (dt*(fin-fout));
     }
     
-    double calcComposition(){
-      return 0;
+    double *calcComposition(double fin1, double fin2, double port1[], double port2[], double num){
+      
+      static double tcomp[3];
+      
+      for(int i=0; i<num;i++){
+        tcomp[i] = (fin1*port1[i] + fin2*port2[i])/(fin1 + fin2);
+      }
+      
+      return tcomp;
     }
 
 };
@@ -173,8 +180,7 @@ class tank: public composition{
 
 int main()
 {
-  //cout << "hi\n";
- // srand(time(NULL));
+  
   double deltaT = 0.1;
   double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
   
@@ -183,6 +189,8 @@ int main()
   double intError = 0.0, intError2 = 0.0;
   
   double head = 165.9;
+  
+  double *tankComp;
 
   //Object definitions
   boundary b1, b2, b3, b4, b5;
@@ -210,6 +218,10 @@ int main()
   t1.portInHeight = 3.1;
   t1.portInHeight2 = 3.2;
   t1.portOutHeight = 0.5;
+  
+  t1.z[0] = 1.0;
+  t1.z[1] = 0.0;
+  t1.z[2] = 0.0;
   
   
 
@@ -247,16 +259,18 @@ int main()
   b3.pressureIn = 150.0;
   b3.temperatureIn = 50.0;
   
-  b3.z[0] = 0.5;
-  b3.z[1] = 0.1;
-  b3.z[2] = 0.4;
-  
-  cout << b3.checkSum()<<endl;
+ 
   
   b4.pressureOut = 120.0;
   
   b5.pressureIn = 125.6;
   b5.temperatureIn = 60.0;
+  
+  b5.z[0] = 0.5;
+  b5.z[1] = 0.1;
+  b5.z[2] = 0.4;
+  
+  cout << b5.checkSum()<<endl;
   
   h1.fitRes =100.0;
   h1.heatDuty = 100.0;
@@ -269,6 +283,15 @@ int main()
     flowIn1 = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.controlPID(deltaT,flowIn, pid1.SP, intError2));
     flowIn3 = v3.getflowIn(b5.pressureIn,t1.getOpPressure(t1.portInHeight2, tankLevel),0.5);
     flowIn = flowIn1 + flowIn3;
+    
+    v1.z[0] = b1.z[0];
+    v1.z[1] = b1.z[1];
+    v1.z[2] = b1.z[2];
+    
+    v3.z[0] = b5.z[0];
+    v3.z[1] = b5.z[1];
+    v3.z[2] = b5.z[2];
+    
     v1.tempIn = v1. tempOut = b1.temperatureIn;
     tankLevel = t1.levelAccumulated(deltaT, flowIn, flowOut, tankLevel);
     tankPressure = 101.325 + (1000*9.80665*tankLevel*0.001);
@@ -276,6 +299,7 @@ int main()
     mass = t1.massAccumulated(deltaT,flowIn, flowOut, mass);
     enthalpyIn = t1.enthalpyAccumulated(deltaT, flowIn1,flowIn3, flowOut, tankTemperature, t1.heatIn, mass, enthalpyIn);
     tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
+    tankComp = t1.calcComposition(flowIn1, flowIn3,v1.z,v3.z,3);
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
    // v2.tempIn = v2.tempOut = tankTemperature;
@@ -293,12 +317,16 @@ int main()
     
     flowIn4 = pu1.getflowIn(head, 0.01, pu1.a0, pu1.a1, pu1.a2, pu1.speed, pu1.runFlag);
     
+    for(int i=0;  i<3; i++){
+      cout << *(tankComp + i)<< " ";
+    }
+    cout<< endl;
     //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
     //cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
     
-    cout <<head << " "<< flowIn4<< endl;
+    //cout <<head << " "<< flowIn4<< endl;
 
   }
 
