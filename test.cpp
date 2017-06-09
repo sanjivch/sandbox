@@ -164,12 +164,12 @@ class tank: public composition{
       return mass + (dt*(fin-fout));
     }
     
-    double *calcComposition(double fin1, double fin2, double port1[], double port2[], double num){
+    double *calcComposition(double fin1, double fin2, double massInTank, double port1[], double port2[], double tankC[], double num){
       
       static double tcomp[3];
       
       for(int i=0; i<num;i++){
-        tcomp[i] = (fin1*port1[i] + fin2*port2[i])/(fin1 + fin2);
+        tcomp[i] = (fin1*port1[i] + fin2*port2[i] + massInTank*tankC[i])/(fin1 + fin2 + massInTank);
       }
       
       return tcomp;
@@ -299,7 +299,7 @@ int main()
     mass = t1.massAccumulated(deltaT,flowIn, flowOut, mass);
     enthalpyIn = t1.enthalpyAccumulated(deltaT, flowIn1,flowIn3, flowOut, tankTemperature, t1.heatIn, mass, enthalpyIn);
     tankTemperature = 25 + enthalpyIn/(mass*4.187); //25 is reference temperature for enthalpy calculation
-    tankComp = t1.calcComposition(flowIn1, flowIn3,v1.z,v3.z,3);
+    tankComp = t1.calcComposition(flowIn1, flowIn3,mass,v1.z,v3.z,t1.z,3);
     
     flowOut = v2.getflowIn(tankPressure, b2.pressureOut, pid2.controlPID(deltaT,tankLevel, pid2.SP, intError));
    // v2.tempIn = v2.tempOut = tankTemperature;
@@ -318,12 +318,14 @@ int main()
     flowIn4 = pu1.getflowIn(head, 0.01, pu1.a0, pu1.a1, pu1.a2, pu1.speed, pu1.runFlag);
     
     for(int i=0;  i<3; i++){
-      cout << *(tankComp + i)<< " ";
+      
+      t1.z[i] =  *(tankComp + i);
+      cout << t1.z[i]<< " ";
     }
-    cout<< endl;
+    //cout<< endl;
     //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
-    //cout << flowIn << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
+    cout << flowIn1<<" "<<flowIn3 << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
     
     //cout <<head << " "<< flowIn4<< endl;
