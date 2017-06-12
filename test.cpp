@@ -27,8 +27,14 @@ class boundary: public composition{
     double pressureIn;
     double temperatureIn;
     double pressureOut;
+    double density;
+    double elevation;
     
     
+    
+    double effectivePressure(double p, double el){
+      return (p + el*1000*9.80665/1000);
+    }
 
 
 };
@@ -115,6 +121,8 @@ class pump : public pipe{
       double a0, a1, a2; //Pump curve coefficients
       double speed;
       
+      double suctionPressure, dischargePressure;
+      
       
       double getflowIn(double p1, double p2, double a, double b, double c, double ns, int flag){
         if(flag != 0 ){
@@ -177,6 +185,20 @@ class tank: public composition{
 
 };
 
+class node : public boundary{
+  public:
+    
+    
+    double initPressure, initTemperature;
+  
+};
+
+class slider{
+  public:
+    double pos;
+  
+};
+
 
 int main()
 {
@@ -184,7 +206,7 @@ int main()
   double deltaT = 0.1;
   double flowIn = 0.0, flowOut = 0.0, tankLevel = 0.0, tankPressure = 101.325, tankTemperature = 25.0, mass = 0.0, enthalpyIn = 0.0;
   
-  double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0, flowIn4 = 0.0;
+  double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0, flowIn4 = 0.0, flowIn5 = 0.0, flowIn6 = 0.0;
 
   double intError = 0.0, intError2 = 0.0;
   
@@ -193,12 +215,14 @@ int main()
   double *tankComp;
 
   //Object definitions
-  boundary b1, b2, b3, b4, b5;
-  valve v1, v2, v3;
+  boundary b1, b2, b3, b4, b5, b6, b7;
+  valve v1, v2, v3, v4;
+  pipe pip1;
   PID pid1, pid2;
   tank t1;
   heatxch h1;
   pump pu1;
+  slider sl1, sl2;
 
   //Object inputs
   v1.dInner = 10.0;
@@ -210,7 +234,9 @@ int main()
   v2.Cvmax =55.3;
   pid2.CO = 0.75;
   
-  v3.Cvmax = 40.0;
+  v3.Cvmax = 20.0;
+  
+  v4.Cvmax = 40.0;
 
   t1.diaInner = 2.1;
   t1.length = 5.0;
@@ -225,7 +251,7 @@ int main()
   
   
 
-  t1.heatIn = -100.0;
+  t1.heatIn = 100.0;
   
   
 
@@ -240,6 +266,8 @@ int main()
   b1.pressureIn = 120.1; //in kPa
   b2.pressureOut = 101.325;
   
+  b1.elevation = 5.0;// in [m]
+  
   b1.temperatureIn = 40.0;
   b1.z[0] = 0.2;
   b1.z[1] = 0.5;
@@ -251,7 +279,7 @@ int main()
   pid1.SP = 105.0;
   pid2.SP = 2.0;
 
-  pid1.Kc = -0.25;
+  pid1.Kc = -0.15;
   pid1.Ti = 1.0;
   pid2.Kc = 0.5;
   pid2.Ti = 2.0;
@@ -272,6 +300,20 @@ int main()
   
   cout << b5.checkSum()<<endl;
   
+  
+  b6.pressureIn = 110.0;
+  b6.temperatureIn = 50.0;
+  b6.elevation = 5.0;
+  
+  b6.z[0] = 1.0;
+  b6.z[1] = 0.0;
+  b6.z[2] = 0.0;
+  
+  b7.pressureOut = 105.0;
+  b7.elevation = 3.6;
+  
+  sl1.pos = 0.0;
+  
   h1.fitRes =100.0;
   h1.heatDuty = 100.0;
   
@@ -279,8 +321,8 @@ int main()
   
 
   //Object linking and connections
-  for(double t=0.0;t<1500.0;t+=deltaT){
-    flowIn1 = v1.getflowIn(b1.pressureIn, t1.getOpPressure(t1.portInHeight, tankLevel), pid1.controlPID(deltaT,flowIn, pid1.SP, intError2));
+  for(double t=0.0;t<2500.0;t+=deltaT){
+    flowIn1 = v1.getflowIn(b1.effectivePressure(b1.pressureIn,b1.elevation), t1.getOpPressure(t1.portInHeight, tankLevel), pid1.controlPID(deltaT,flowIn, pid1.SP, intError2));
     flowIn3 = v3.getflowIn(b5.pressureIn,t1.getOpPressure(t1.portInHeight2, tankLevel),0.5);
     flowIn = flowIn1 + flowIn3;
     
@@ -320,15 +362,21 @@ int main()
     for(int i=0;  i<3; i++){
       
       t1.z[i] =  *(tankComp + i);
-      cout << t1.z[i]<< " ";
+      //cout << t1.z[i]<< " ";
     }
     //cout<< endl;
     //cout << t << " " << flowIn2 << " " <<h1.TOut<<endl;
 
-    cout << flowIn1<<" "<<flowIn3 << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
+    //cout << flowIn1<<" "<<flowIn3 << " " << flowOut<< " "<< tankLevel <<" " << tankPressure<< " "<<tankTemperature<<" "<<pid2.CO<<  endl;
     //cout << enthalpyIn << " " << tankTemperature  << endl;
     
     //cout <<head << " "<< flowIn4<< endl;
+    
+    flowIn5 = v4.getflowIn(b6.effectivePressure(b6.pressureIn, b6.elevation), b7.effectivePressure(b7.pressureOut, b7.elevation), sl1.pos);
+    cout << flowIn5 << " "<<b6.effectivePressure(b6.pressureIn, b6.elevation)<<" "<< b7.effectivePressure(b7.pressureOut, b7.elevation)<< " "<< sl1.pos<< endl;
+    sl1.pos+= 0.01;
+    
+    
 
   }
 
