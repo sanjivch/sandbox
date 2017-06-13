@@ -18,6 +18,15 @@ class composition{
       else 
         return -1.0;
     }
+    
+    double getMolWeight(){
+      double MW = 0.0;
+      for(int i=0; i< 3; i++){
+        MW += z[i]*1;//"1" should be replaced by the MW of the compound
+      }
+      
+      return 0;
+    }
 };
 
 
