@@ -65,8 +65,8 @@ class pipe: public composition{
     
     double tempIn, tempOut, tempAvg;
 
-    double getflowIn(){
-      return 0;
+    double getflowIn(double p1, double p2, double k){
+      return k*sqrt(p1-p2);
     }
 
 };
@@ -102,13 +102,25 @@ class heatxch : public pipe{
       double heatDuty;
       double Tin, TOut;
       
+      double hxArea;
+      double U;
+      
       double getflowIn(double p1, double p2, double fitr){//Overriding the method for flow calculation
+      if(fitr <0.0)
+        fitr = 0.0;
       
       return fitr*sqrt(p1-p2);
       }
       
       double getOutletTemp(double dt, double fin, double T, double q){
+       if(fin <= 0.0)
+        return T;
+       else
         return T +(dt*q/(fin*4.187));
+      }
+      
+      double getLMTD(double Thot1, double Thot2, double Tcold1, double Tcold2){
+        return ((Thot1 - Tcold1)-(Thot2 - Tcold2))/log((Thot1 - Tcold1)/(Thot2 - Tcold2));
       }
     
 
@@ -190,6 +202,23 @@ class node : public boundary{
     
     
     double initPressure, initTemperature;
+    double massIn, massOut;
+    
+    double getPressure(double m1, double m2, double nodeP){
+      double error = abs(m1-m2);
+      if(error <= 0.001)
+        return nodeP;
+      else
+      {
+        
+          
+          nodeP+=error*10;
+          
+          
+        
+      return 0;
+      }  
+    }
   
 };
 
@@ -208,7 +237,7 @@ int main()
   
   double flowIn1 =0.0, flowIn2 = 0.0, flowIn3 = 0.0, flowIn4 = 0.0, flowIn5 = 0.0, flowIn6 = 0.0;
 
-  double intError = 0.0, intError2 = 0.0;
+  double intError = 0.0, intError2 = 0.0, intError3 = 0.0;
   
   double head = 165.9;
   
@@ -218,10 +247,11 @@ int main()
   boundary b1, b2, b3, b4, b5, b6, b7;
   valve v1, v2, v3, v4;
   pipe pip1;
-  PID pid1, pid2;
+  PID pid1, pid2, pid3;
   tank t1;
-  heatxch h1;
+  heatxch h1, h2;
   pump pu1;
+  node n1;
   slider sl1, sl2;
 
   //Object inputs
@@ -278,11 +308,14 @@ int main()
 
   pid1.SP = 105.0;
   pid2.SP = 2.0;
+  pid3.SP = 85.0;
 
   pid1.Kc = -0.15;
   pid1.Ti = 1.0;
   pid2.Kc = 0.5;
   pid2.Ti = 2.0;
+  pid3.Kc = 1.0;
+  pid3.Ti = 2.1;
   
   b3.pressureIn = 150.0;
   b3.temperatureIn = 50.0;
@@ -302,7 +335,7 @@ int main()
   
   
   b6.pressureIn = 110.0;
-  b6.temperatureIn = 50.0;
+  b6.temperatureIn = 90.0;
   b6.elevation = 5.0;
   
   b6.z[0] = 1.0;
@@ -314,10 +347,18 @@ int main()
   
   sl1.pos = 0.0;
   
-  h1.fitRes =100.0;
-  h1.heatDuty = 100.0;
+  n1.initPressure = 101.325;
+  
+  h1.fitRes =10.0;
+  h1.heatDuty = 0;//Changed from 100.0 
+  
+  h2.fitRes = 90.0;
+  h2.hxArea = 2.0;
+  h2.U = 0.01;//in [kW/m^2. K]
   
   h1.Tin = h1.TOut = b3.temperatureIn;  //Initial exit temperature of the hxer 
+  h2.Tin = b6.temperatureIn;
+  h2.TOut = h2.Tin - 0.05;
   
 
   //Object linking and connections
@@ -372,11 +413,18 @@ int main()
     
     //cout <<head << " "<< flowIn4<< endl;
     
-    flowIn5 = v4.getflowIn(b6.effectivePressure(b6.pressureIn, b6.elevation), b7.effectivePressure(b7.pressureOut, b7.elevation), sl1.pos);
-    cout << flowIn5 << " "<<b6.effectivePressure(b6.pressureIn, b6.elevation)<<" "<< b7.effectivePressure(b7.pressureOut, b7.elevation)<< " "<< sl1.pos<< endl;
-    sl1.pos+= 0.01;
+   // flowIn5 = v4.getflowIn(b6.effectivePressure(b6.pressureIn, b6.elevation), b7.effectivePressure(b7.pressureOut, b7.elevation), sl1.pos);
+   flowIn5 = h2.getflowIn(b6.pressureIn,b7.pressureOut,pid3.controlPID(deltaT,h2.TOut,pid3.SP,intError3));
+   intError3 = pid3.errorIntegral(deltaT,h2.TOut,pid3.SP,intError3);
+   h2.heatDuty = -h2.U * h2.hxArea * h2.getLMTD(h2.Tin, h2.TOut,h1.Tin, h1.TOut);
+   
+   h2.TOut = h2.getOutletTemp(deltaT, flowIn5, h2.TOut, h2.heatDuty);
+   h1.heatDuty = -h2.heatDuty;
+   
+    cout << flowIn5 << " " <<h1.Tin <<" "<< h1.TOut <<" "<< h2.Tin <<" "<< h2.TOut<<" "<<h1.heatDuty<<" "<<h2.heatDuty<< endl;
+    //sl1.pos+= 0.01;
     
-    
+    //n1.effectivePressure()
 
   }
 
