@@ -5,6 +5,8 @@ using namespace std;
 namespace thermo{
   //public:
     double a(double, double);//declare the function before!!
+    double b(double, double);
+    double alpha(double);
     double vp_Antonie(double a, double b, double c, double T){
       return exp(a - b/(T+c));
     }
@@ -16,6 +18,15 @@ namespace thermo{
     
     double a(double T, double P){
       return 0.42747*pow(8.314*T,2)/P;
+    }
+    
+    double b(double T, double P){
+      return 0.08664*8.314*T/P;
+    }
+    
+    double alpha(double omega, double Tr){
+      double m = 0.48508+1.55171*omega-0.1561*pow(omega,2);
+      return pow(1+m*(1-sqrt(Tr)),2);
     }
     
     double nr(){
@@ -40,7 +51,7 @@ namespace thermo{
       double f_v, df_v;
       
       
-      for(int i =1; i < 10; i++){
+      for(int i =1; i < 50; i++){
         
         f_v = P - (R*T/(vn - b)) + (alpha*a/(vn*(vn+b)));
         df_v = (R*T/pow(vn - b,2)) + (alpha*a*(2*vn + b)/pow(vn*(vn+b),2));
@@ -66,7 +77,7 @@ int main(){
   cout << thermo::vp_Antonie(1,2,20,273)<<endl;
   cout << thermo::SRK_P(304.2, 72.9, 0.225, 2.5) << endl;
   //cout << thermo::nr()<<endl;
-  cout << thermo::nr_srk(8.314, 423, 70, 1,1,1)<< endl;
+  cout << thermo::nr_srk(8.314, 423, 70, thermo::a(423,70),thermo::b(423,70),thermo::alpha(0.152,0.98))<< endl;
   
   
 }
