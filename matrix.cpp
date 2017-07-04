@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 #define N 7
 using namespace std;
 
@@ -129,7 +130,7 @@ void delta(double A[N][N], double F[N], double delH[N]){
       for(int j =0; j<N; j++){
         delH[i] += A[i][j] * F[j];
       }
-      cout << delH[i] << endl;
+     // cout << delH[i] << endl;
     }
 }
 
@@ -154,6 +155,10 @@ void displayC(S H[N]){
 // Driver program
 int main()
 {
+    
+                       
+    double F[N] = {0.606,-0.822,-0.330,0.845,2.779,-5.002,-0.372};
+    double H[N] = {198.0, 193.0, 195.0, 175.0, 188.0, 190.0, 184.0};
     double A[N][N] = { {8.352, -1.131, 0.0, 0.0, 0.0, -0.911, 0.0},
                        {-1.131, 1.514, -0.036, 0.0, 0.0, 0.0, -0.347},
                        {0.0, -0.036, 0.126, -0.013, 0.0, 0.0, 0.0},
@@ -161,28 +166,30 @@ int main()
                        {0.0, 0.0, 0.0, -0.041, 0.904, -0.863, 0.0},
                        {-0.911, 0.0, 0.0, 0.0, -0.863, 1.802, -0.027},
                        {0.0, -0.347, 0.0, -0.163, 0.0, -0.027, 0.537}};
-                       
-    double F[N] = {0.606,-0.822,-0.330,0.845,2.779,-5.002,-0.372};
  
     double news[N][N];  // To store adjoint of A[][]
     double delH[N];
  
     double inv[N][N]; // To store inverse of A[][]
  
-    cout << "Input matrix is :\n";
-    display(A);
-    //determinant(A,)
+    double node[10];
+    double k[10] = {0.00584, 0.0645, 0.0645, 0.349, 0.233, 1.416, 55.20, 13.60, 82.79, 82.79};
+    
+    for(int i=0; i<10; i++){
+      if(i==0)
+        node[i] = pow((200.0-H[i])/k[i], 0.54);
+      else
+        node[i] = pow(abs(H[i-1]-H[i])/k[i], 0.54);
+    }
+    displayC(node);
+    
+    
+    
  
-   // cout << "\nThe Adjoint is :\n";
-    //adjoint(A, adj);
-    //display(adj);
-    displayC(F);
- 
-    cout << "\nThe Inverse is :\n";
+    
     if (inverse(A, inv))
         display(inv);
     delta(inv,F, delH);
-    //displayC(delH);
- 
+    
     return 0;
 }
