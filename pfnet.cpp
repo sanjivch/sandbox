@@ -9,6 +9,7 @@ int main(){
  int i;
  
  for(i =1; i < 3000; i++){
+  // TODO : NR method to solve the system simultaneously
    m12 = f12*sqrt(abs(p1-p2));
    m23 = f23*sqrt(abs(p2-p3));
    m34 = f34*sqrt(abs(p3-p4));
