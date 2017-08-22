@@ -5,6 +5,7 @@ using namespace std;
 
 #define N 3
 #define PI 3.1415
+#define N1 0.0865
 
 class PID{
   public:
@@ -15,6 +16,11 @@ class PID{
 
       error = pv - sp;
       CO = Kc*error + Kc*integral/Ti;
+      if(CO > 100.0)
+        CO = 100.0;
+      if(CO < 0.0)
+        CO = 0.0;
+      
       return CO/100.0;
     }
 
@@ -166,7 +172,7 @@ int main(){
 
   PID pid1;
   pid1.CO = 0.5;
-  pid1.SP = 25.0;
+  pid1.SP = 19.7657;
   pid1.Kc = -0.65;
   pid1.Ti = 0.20;
 
@@ -179,24 +185,22 @@ int main(){
   double NRe1, NRe2, NRe3, NRe4, NRe5;
   double epsilon = 0.000061;
   double f1, f2, f3, f4, f5;
-  double diaIn1= 380.0, diaIn2= 360.0, diaIn3 = 200.0, diaIn4 = 200.0, diaIn5 = 200.0;
-  double kFit1 = 0.2, kFit2 = 0.3, kFit3 = 0.3, kFit4 = 0.0375, kFit5 = 0.3;
+  double diaIn1= 500.0, diaIn2= 500.0, diaIn3 = 250.0, diaIn4 = 300.0, diaIn5 = 250.0;
+  double kFit1 = 0.1, kFit2 = 0.1, kFit3 = 0.5, kFit4 = 0.15, kFit5 = 0.5;
   double area1, area2, area3, area4, area5;
   double nP1 = 101.325, nP2 = 101.325, nP3 = 101.325, soP = 205.0, si1P = 108.0, si2P = 122.3;
   double dP1 = 0.0, dP2 = 0.0, dP3 = 0.0;
   double Jn[3][3], delP[3][1], res[3][1], invJ[3][3];
-  double maxCv = 1.0;
+  double maxCv = 1500.0, valve_dP = 0.0;
   double rho = 997.3, viscosity = 0.000891;
 
   double open;
 
   int iter, i, j;
   /*
-
   soP======|m1|========>nP1=======|m2|=====>nP2=======|m3|=======nP3=======|m5|========>si1P
                                             ||
                                              =========|m4|=======>si2P
-
   */
 
   area1 = 0.25*PI*pow(0.001*diaIn1,2);
@@ -221,7 +225,9 @@ int main(){
       m2 = area2 * sqrt(2 * rho * abs(nP1 - nP2)/(f2*l2*1000.0/diaIn2 + kFit2));
       m3 = area3 * sqrt(2 * rho * abs(nP2 - nP3)/(f3*l3*1000.0/diaIn3 + kFit3));
       open = pid1.controlPID(deltaT,m4, pid1.SP, intError2);
-      m4 = open * maxCv * area4 * sqrt(2 * rho * abs(nP2 - si2P)/(f4*l4*1000.0/diaIn4 + kFit4));
+      
+      
+      m4 = area4 * sqrt(2 * rho * abs(nP2 - si2P - valve_dP)/(f4*l4*1000.0/diaIn4 + kFit4));
       m5 = area5 * sqrt(2 * rho * abs(nP3 - si1P)/(f5*l5*1000.0/diaIn5 + kFit5));
 
 
@@ -253,7 +259,7 @@ int main(){
 
      // cout << m1 << " " << m2 << " " << m3 << " " << m4 << " " << nP1 << " " << nP2 << " " << delP[0][0]<<" "<<delP[1][0]<< endl;
     }
-
+  
       vel1 = m1/(rho * area1);
       vel2 = m2/(rho * area2);
       vel3 = m3/(rho * area3);
@@ -267,7 +273,9 @@ int main(){
       NRe5 = 0.001*diaIn5 * vel5 * rho/ viscosity;
 
   intError2 = pid1.errorIntegral(deltaT, m4, pid1.SP, intError2);
-  //cout << m4 << " " << open<<endl;
+  
+      valve_dP = pow(m4 * 3600.0/ (rho* N1 * open * maxCv),2);
+  cout << m4 << " " << open<<" " << valve_dP<<endl;
   //cout << m1 << " " << m2 << " " << m3 << " " <<m5<< " " << m4 << " " << nP1 << " " << nP2 << " " <<nP3 <<" "<< delP[0][0]<<" "<<delP[1][0]<< " " << delP[2][0] << " "<<endl;
   }
 
