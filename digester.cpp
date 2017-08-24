@@ -1,6 +1,12 @@
-/*Code snippet only 
-  Ref: 
+/*
+Continuous Digester Model 
+Author: Sanjiv Chemudupati
+Ref:  Fundamental continuous-pulp-digester model for simulation and control
+      Philip A Wisnewski; Francis J Doyle III; Ferhan Kayihan
+      American Institute of Chemical Engineers. AIChE Journal; Dec 1997; 43, 12; Research Library
+      pg. 3175
 */
+
 #include <iostream>
 #include <math.h>
 #define R 0.0083144 //   [kJ/mol. K]
@@ -86,7 +92,7 @@ int main(){
        rhoS_sum += rhoS[CSTR][sComp];
        
        sumR_S[CSTR] += R_S[CSTR][sComp];
-     }
+    }
      
      //Porosity Calculation
      epsilon[CSTR] = 1 - rhoS_sum/ rhoS_Total;
@@ -105,7 +111,20 @@ int main(){
        Vbdot[CSTR] = -sumR_S[CSTR]/ rhoS_Total;
        
        d_rhoE[CSTR][eComp] = (-rhoE[CSTR][eComp] * d_epsilon[CSTR]/ epsilon[CSTR]) + Vcdot * (rhoE[CSTR-1][eComp] * epsilon[CSTR-1] - rhoE[CSTR][eComp] * epsilon[CSTR])/ V_entrap[CSTR] + D[CSTR] * (rhoF[CSTR][fComp] - rhoE[CSTR][eComp]) + (R_E[CSTR][eComp]/ epsilon[CSTR]) + (Vbdot[CSTR] * rhoF[CSTR][fComp])/V_entrap[CSTR];
+    }
+     
+     V_free = eta[CSTR] * Area[CSTR] * height[CSTR];
+     //free-liquor-phase components
+     for(fComp = 0; fComp < 6; ++fComp){
+       
+       Vfdot_in[CSTR] = Vfdot_out[CSTR -1];
+       Vfdot_out[CSTR] = Vfdot_in[CSTR] - Vbdot[CSTR] + Vextdot;
+       
+       
+       d_rhoF[CSTR][fComp] = (Vfdot_in[CSTR] * rhoF[CSTR-1][fComp])/V_free[CSTR] - (Vfdot_out[CSTR] * rhoF[CSTR][fComp])/V_free + (D[CSTR] * epsilon[CSTR] * (1 - eta[CSTR]) * (rhoE[CSTR][fComp] - rhoF[CSTR][fComp])/ eta[CSTR]) + (Vbdot[CSTR] * rhoF[CSTR][fComp] + Vextdot * rhoF_ext[fComp])/ V_free[CSTR] ;
      }
+     
+     
   }
    
    
