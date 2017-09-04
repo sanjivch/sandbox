@@ -155,6 +155,9 @@ int main(){
     b[5][3] = -1.0 - b[4][3];
     b[5][4] = -1.0 - b[4][4];
        
+       
+       R_eSum[eComp] += b[sComp][eComp] * R_s[CSTR][sComp];
+    R_e[CSTR][eComp] = R_eSum[eComp];
        */
        
            
