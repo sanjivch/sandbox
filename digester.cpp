@@ -158,6 +158,11 @@ int main(){
        
        R_eSum[eComp] += b[sComp][eComp] * R_s[CSTR][sComp];
     R_e[CSTR][eComp] = R_eSum[eComp];
+    
+    dT_chips[CSTR] = ((Cp_s * M_sdot[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilondot[CSTR] + Cp_e[CSTR] * M_edot[CSTR] * epsilon[CSTR]) * T_chips[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vcdot * (Cp_s * M_s[CSTR-1] + Cp_e[CSTR-1] * M_e[CSTR-1] * epsilon[CSTR-1]) * (T_chips[CSTR-1] - T_chips[CSTR])/ (V_chips * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + dH_rxn * sumR_s/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + U * (T_free[CSTR] - T_chips[CSTR])/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vbdot[CSTR] * (Cp_f[CSTR] * M_f[CSTR] * T_free[CSTR])/ (V_chips * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + D[CSTR] * D_E[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) * deltaT;
+    T_chips[CSTR] += dT_chips[CSTR];
+    
+    
        */
        
            
