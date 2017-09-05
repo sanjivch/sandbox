@@ -28,12 +28,12 @@ void init2Da(Init2D A[N][O])
 }
 
 template<class Init2D>
-void init2Db(Init2D A[N][P])
+void init2Db(Init2D A[N][P], double num)
 {
   for (int i=0; i<N; i++)
     {
         for (int j=0; j<P; j++){
-           A[i][j] = 0.0;
+           A[i][j] = num;
            //std::cout <<i << " "<< A[i][j] << " " ;
         }
        // std::cout << "\n";
@@ -41,37 +41,14 @@ void init2Db(Init2D A[N][P])
 }
 
 template<class Init1D>
-void init1D(Init1D A[N])
+void init1D(Init1D A[N], double num)
 {
     for (int i=0; i<N; i++)
     {
-       A[i] = 0.0;
+       A[i] = num;
        //std::cout << i << " " << A[i] << " " << std::endl;
 
     }
-}
-
-template<class Init1D>
-void Init1DT(Init1D A[N])
-{
-  for (int i=0; i<N; i++)
-    {
-       A[i] = 273.15;
-       //std::cout << i << " " << A[i] << " " << std::endl;
-
-    }
-}
-
-double sigmaR(){
-  return 1.0;
-}
-
-double sumEntrapped(double cp, double tf, double tc){
-  return 1.0;
-}
-
-double sumSolid(double cp, double tf, double tc){
-  return 1.0;
 }
 
 int main(){
@@ -166,7 +143,7 @@ int main(){
   double d_rhoS[50][5], rhoS[50][5], rhoS_un[50][5], R_S[50][5], sumR_S[50], rhoS_Total = 600.0, rho_water = 997.03;
   double rhoS_sum[50], d_rhoS_sum[50];
 
-  double d_rhoE[50][6], rhoE[50][6], R_E[50][6];
+  double d_rhoE[50][6], rhoE[50][6], R_E[50][6], sumR_E[50];
   double rhoEL_sum[50], rhoES_sum[50];
   double d_rhoF[50][6], rhoF[50][6], rhoF_sum = 0.0;
   double rhoFL_sum[50], rhoFS_sum[50], rhoF_ext[50];
@@ -176,8 +153,8 @@ int main(){
   double e_f[50], D[50];
 
   double k1[5], k2[5];
-  static double A1[] = {0.3954, 1.457E+11, 28.09, 7.075, 5826.7 };
-  static double A2[] = {12.49, 1.873, 124.9, 47.86, 3.225E+16 };
+  static double A1[] = {0.3954, 1.457E+11, 28.09, 7.075, 5826.7};
+  static double A2[] = {12.49, 1.873, 124.9, 47.86, 3.225E+16};
   static double E1[] = {29.3, 115.0, 34.7, 25.1, 73.3};
   static double E2[] = {31.4, 37.7, 41.9, 37.7, 167.0};
   
@@ -199,38 +176,40 @@ int main(){
 
   //Initialize all the arrays
 
-  init1D(rhoS_sum);
-  init1D(d_rhoS_sum);
-  init1D(rhoEL_sum);
-  init1D(rhoES_sum);
-  init1D(rhoFL_sum);
-  init1D(rhoFS_sum);
-  init1D(rhoF_ext);
-  init1D(dT_free);
-  init1D(dT_chips);
-  init1D(e_f);
-  init1D(M_sdot);
-  init1D(M_edot);
-  init1D(eta);
+  init1D(rhoS_sum, 0.0);
+  init1D(d_rhoS_sum, 0.0);
+  init1D(rhoEL_sum, 0.0);
+  init1D(rhoES_sum, 0.0);
+  init1D(rhoFL_sum, 0.0);
+  init1D(rhoFS_sum, 0.0);
+  init1D(rhoF_ext, 0.0);
+  init1D(dT_free, 0.0);
+  init1D(dT_chips, 0.0);
+  init1D(e_f, 0.9);
+  init1D(M_sdot, 0.0);
+  init1D(M_edot, 0.0);
+  init1D(eta, 0.99999);
+  init1D(sumR_S, 0.0);
+  init1D(sumR_E, 0.0);
+  init1D(T_chips, 273.15);
+  init1D(T_free, 273.15);
   
-  Init1DT(T_chips);
+  init2Db(d_rhoS, 0.0);
+  init2Db(rhoS, 0.001);
+  init2Db(rhoS_un, 0.0);
+  init2Db(R_S, 0.0);
   
-  init2Db(d_rhoS);
-  init2Db(rhoS);
-  init2Db(rhoS_un);
-  init2Db(R_S);
   
-  //double d_rhoS[50][5], rhoS[50][5], rhoS_un[50][5], R_S[50][5],
   init2Da(d_rhoE);
   init2Da(rhoE);
   init2Da(R_E);
   init2Da(d_rhoF);
   init2Da(rhoF);
-  //double d_rhoE[50][6], rhoE[50][6], R_E[50][6];
+  
 
 
   
-  for(t = 0.0; t < 2.0; t += deltaT){
+  for(t = 0.0; t < 0.10; t += deltaT){
 
 
    for(CSTR = 0; CSTR < maxCSTR; CSTR++){
@@ -241,15 +220,29 @@ int main(){
      //Solid-phase components
      for(sComp = 0; sComp < 5; sComp++){
 
-       k1[sComp] = A1[sComp] * exp(-E1[sComp]/ (R * T_chips[CSTR]));
-       k2[sComp] = A2[sComp] * exp(-E2[sComp]/ (R * T_chips[CSTR]));
+       k1[sComp] = 60.0 * A1[sComp] * exp(-E1[sComp]/ (R * T_chips[CSTR]));
+       k2[sComp] = 60.0 * A2[sComp] * exp(-E2[sComp]/ (R * T_chips[CSTR]));
        
-       std::cout << k1[sComp] << " " << k2[sComp] << std::endl;
-
+       //std::cout << k1[sComp] << " " << k2[sComp] << std::endl;
+       rhoS_un[CSTR][0] = 0.0;
+       rhoS_un[CSTR][1] = 0.0;
+       rhoS_un[CSTR][2] = 0.65;
+       rhoS_un[CSTR][3] = 0.25;
+       rhoS_un[CSTR][4] = 0.0;
+       
        R_S[CSTR][sComp] = -e_f[CSTR] * (k1[sComp] * rhoS[CSTR][0] + k2[sComp] * sqrt(rhoS[CSTR][0] * rhoS[CSTR][2])) * (rhoS[CSTR][sComp] - rhoS_un[CSTR][sComp]);
-
-       d_rhoS[CSTR][sComp] = ((Vcdot/ V_chips[CSTR]) * (rhoS[CSTR-1][sComp] - rhoS[CSTR][sComp]) + R_S[CSTR][sComp]) * deltaT;
-       rhoS[CSTR][sComp] += d_rhoS[CSTR][sComp] * deltaT;
+       Vcdot = 10.0;
+       std::cout << R_S[CSTR][sComp] << " " ;
+       //std::cout << Vcdot << " ";
+  	   if(CSTR == 0){
+    	   d_rhoS[CSTR][sComp] = (-(Vcdot/ V_chips[CSTR]) * (rhoS[CSTR][sComp]) + R_S[CSTR][sComp]) * deltaT;  
+  	   }
+  	   else{
+  		   d_rhoS[CSTR][sComp] = ((Vcdot/ V_chips[CSTR]) * (rhoS[CSTR-1][sComp] - rhoS[CSTR][sComp]) + R_S[CSTR][sComp]) * deltaT;  
+  	   }
+       
+       rhoS[CSTR][sComp] += d_rhoS[CSTR][sComp];
+       //std::cout << rhoS[CSTR][sComp] << " ";
 
        d_rhoS_sum[CSTR] += d_rhoS[CSTR][sComp];
        rhoS_sum[CSTR] += rhoS[CSTR][sComp];
@@ -272,9 +265,9 @@ int main(){
 
 
 
-        betaOHC = 0.5;
-        betaHSL = 0.25;
-        betaOHL = 0.75;
+        betaOHC = 0.395;
+        betaHSL = 0.039;
+        betaOHL = 0.166;
 
 
         b[0][0] = betaOHL - 0.5 * betaHSL;
@@ -318,6 +311,12 @@ int main(){
         b[5][4] = -1.0 - b[4][4];
        
 	   //R_E[CSTR][eComp] =
+	     for(sComp = 0; sComp < 5; sComp++){
+	        sumR_E[eComp] += b[sComp][eComp] * R_S[CSTR][sComp];
+	     }
+	     
+       R_E[CSTR][eComp] = sumR_E[eComp];
+       
        D[CSTR] = 6.1321 * sqrt(T_chips[CSTR]) * exp(-4870.0/(1.98 * T_chips[CSTR]));
 
        Vbdot[CSTR] = -sumR_S[CSTR]/ rhoS_Total;
