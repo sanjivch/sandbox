@@ -15,14 +15,28 @@ Ref:  Fundamental continuous-pulp-digester model for simulation and control
 #define P 5
 
 template<class Init2D>
-void init2D(Init2D A[N][O])
+void init2Da(Init2D A[N][O])
 {
     for (int i=0; i<N; i++)
     {
         for (int j=0; j<O; j++){
            A[i][j] = 0.0;
+           //std::cout <<i << " "<< A[i][j] << " " ;
         }
+        //std::cout << "\n";
+    }
+}
 
+template<class Init2D>
+void init2Db(Init2D A[N][P])
+{
+  for (int i=0; i<N; i++)
+    {
+        for (int j=0; j<P; j++){
+           A[i][j] = 0.0;
+           //std::cout <<i << " "<< A[i][j] << " " ;
+        }
+       // std::cout << "\n";
     }
 }
 
@@ -32,6 +46,17 @@ void init1D(Init1D A[N])
     for (int i=0; i<N; i++)
     {
        A[i] = 0.0;
+       //std::cout << i << " " << A[i] << " " << std::endl;
+
+    }
+}
+
+template<class Init1D>
+void Init1DT(Init1D A[N])
+{
+  for (int i=0; i<N; i++)
+    {
+       A[i] = 273.15;
        //std::cout << i << " " << A[i] << " " << std::endl;
 
     }
@@ -52,24 +77,24 @@ double sumSolid(double cp, double tf, double tc){
 int main(){
 
   /*
-  Variables:
-  Cp_s = Heat capacity of solid phase [kJ/kg.K]
-  Cp_e = Heat capacity of entrapped-liquor phase [kJ/kg.K]
-  Cp_f = Heat capacity of free-liquor phase [kJ/kg.K]
-
-  dH_rxn = Heat of reaction [kJ/kg]
-  U = Heat transfer coefficient [kJ/min.K.m3]
-
-  D_E = Net energy transported into the chips per volume of diffusing mass
+  	Variables:
+  	Cp_s = Heat capacity of solid phase [kJ/kg.K]
+  	Cp_e = Heat capacity of entrapped-liquor phase [kJ/kg.K]
+  	Cp_f = Heat capacity of free-liquor phase [kJ/kg.K]
+  
+  	dH_rxn = Heat of reaction [kJ/kg]
+  	U = Heat transfer coefficient [kJ/min.K.m3]
+  
+  	D_E = Net energy transported into the chips per volume of diffusing mass
 
 
     VARIABLES:
 
-    Vf = Volume of free liquor [m3]
+    V_freef = Volume of free liquor [m3]
     V = Volume of CSTR [m3]
-    Vc = Volume of chip [m3]
+    V_chips = Volume of chip [m3]
     Vs = Volume of solid [m3]
-    Ve = Volume of entrapped liquor [m3]
+    V_entrap = Volume of entrapped liquor [m3]
 
     eta = Volume fraction of the free liquor and the wood chips
     epsilon = volume fraction of the wood chip that is occupied by the entrapped liquor (porosity)
@@ -130,27 +155,21 @@ int main(){
     kappa = measure of residual lignin in wood chips
     yield = measure of amount of wood substance recovered to amount of wood substance fed
 
-
-
-
-  */
+ */
+ 
   int sComp, eComp, fComp, CSTR, maxCSTR = 50;
-  double eta[50], Area[50], height[50];
+  
+  double eta[50];
+  static double Area[] = {17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,17.9854,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,18.6793,19.865,19.865,19.865,21.0871,21.0871,21.0871,21.0871};
+  static double height[] = {0.623,0.623,0.623,0.623,0.623,0.5944,0.5944,0.5944,0.5944,0.4775,0.4775,0.4775,0.6096,0.6096,0.6096,0.5182,0.5182,0.5182,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.701,0.4877,0.4877,0.4877,0.6477,0.6477,0.6477,0.6477,0.6477,0.6477,0.6477,0.6477,0.3962,0.7925,0.3962,1.1278,0.6096,1.0058,1.0058};
 
   double d_rhoS[50][5], rhoS[50][5], rhoS_un[50][5], R_S[50][5], sumR_S[50], rhoS_Total = 600.0, rho_water = 997.03;
-
-  double rhoS_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  double d_rhoS_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  double rhoS_sum[50], d_rhoS_sum[50];
 
   double d_rhoE[50][6], rhoE[50][6], R_E[50][6];
-  double rhoEL_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  double rhoES_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
+  double rhoEL_sum[50], rhoES_sum[50];
   double d_rhoF[50][6], rhoF[50][6], rhoF_sum = 0.0;
-  double rhoFL_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  double rhoFS_sum[50];// = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  //double d_rhoF[50][6], rhoF[50][6], rhoF_sum = 0.0;
-  double rhoF_ext[50];
+  double rhoFL_sum[50], rhoFS_sum[50], rhoF_ext[50];
 
   double dT_free[50], dT_chips[50];
 
@@ -161,14 +180,16 @@ int main(){
   static double A2[] = {12.49, 1.873, 124.9, 47.86, 3.225E+16 };
   static double E1[] = {29.3, 115.0, 34.7, 25.1, 73.3};
   static double E2[] = {31.4, 37.7, 41.9, 37.7, 167.0};
+  
+  double b[6][5];
 
   double Cp_s = 1.47, Cp_e[50], Cp_f[50], Cp_e0, Cp_f0, Cp_l, Cp_ext, Cp_x, Cp_fext[50];
   double H_se = 0.0, dH_se, H_f = 0.0, dH_f, dH_rxn = -581.0;
-  double M_s[50], M_s0, M_e[50], M_e0,  M_f[50], M_f0, M_ext;
-  double M_es[50], M_el[50], M_fs[50], M_fl[50], M_fdot;
+  double M_s[50], M_s0, M_e[50], M_e0,  M_f[50], M_f0, M_ext, M_sdot[50], M_edot[50], M_fext[50];
+  double M_es[50], M_el[50], M_fs[50], M_fl[50], M_fdot[50];
   double V_chips[50], V_entrap[50], V_free[50];
   double T_chips[50], T_free[50], T_f0, T_ext;
-  double U = 827.0, Vcdot, Vbdot[50], Vfdot_0, Vfdot, Vfdot_in[50], Vfdot_out[50], Vextdot[50];
+  double U = 827.0, Vcdot, Vbdot[50], Vfdot_0, Vfdot[50], Vfdot_in[50], Vfdot_out[50], Vextdot[50];
   double epsilon[50], d_epsilon[50];
   double betaOHL, betaHSL, betaOHC;
   double k, A_T, D_sum[50], D_E[50], D_F[50];
@@ -176,7 +197,7 @@ int main(){
   double h_factor = 0.0;
   double t, deltaT = 0.1;
 
-  //std::cin >> T_top;
+  //Initialize all the arrays
 
   init1D(rhoS_sum);
   init1D(d_rhoS_sum);
@@ -187,20 +208,43 @@ int main(){
   init1D(rhoF_ext);
   init1D(dT_free);
   init1D(dT_chips);
+  init1D(e_f);
+  init1D(M_sdot);
+  init1D(M_edot);
+  init1D(eta);
+  
+  Init1DT(T_chips);
+  
+  init2Db(d_rhoS);
+  init2Db(rhoS);
+  init2Db(rhoS_un);
+  init2Db(R_S);
+  
+  //double d_rhoS[50][5], rhoS[50][5], rhoS_un[50][5], R_S[50][5],
+  init2Da(d_rhoE);
+  init2Da(rhoE);
+  init2Da(R_E);
+  init2Da(d_rhoF);
+  init2Da(rhoF);
+  //double d_rhoE[50][6], rhoE[50][6], R_E[50][6];
 
-  /*
-  for(t = 0.0; t < 2000.0; t += deltaT){
 
-    V_chips[CSTR] = (1-eta[CSTR]) * Area[CSTR] * height[CSTR];
+  
+  for(t = 0.0; t < 2.0; t += deltaT){
 
 
-   for(CSTR = 0; CSTR < maxCSTR; ++CSTR){
-
+   for(CSTR = 0; CSTR < maxCSTR; CSTR++){
+      
+      V_chips[CSTR] = (1-eta[CSTR]) * Area[CSTR] * height[CSTR];
+      //std::cout << V_chips[CSTR] << " " << eta[CSTR] << std::endl;
+      
      //Solid-phase components
      for(sComp = 0; sComp < 5; sComp++){
 
        k1[sComp] = A1[sComp] * exp(-E1[sComp]/ (R * T_chips[CSTR]));
        k2[sComp] = A2[sComp] * exp(-E2[sComp]/ (R * T_chips[CSTR]));
+       
+       std::cout << k1[sComp] << " " << k2[sComp] << std::endl;
 
        R_S[CSTR][sComp] = -e_f[CSTR] * (k1[sComp] * rhoS[CSTR][0] + k2[sComp] * sqrt(rhoS[CSTR][0] * rhoS[CSTR][2])) * (rhoS[CSTR][sComp] - rhoS_un[CSTR][sComp]);
 
@@ -223,7 +267,8 @@ int main(){
 
      //Entrapped-liquor-phase components
      for(eComp = 0; eComp < 6; eComp++){
-       fComp = eComp;
+       
+	   fComp = eComp;
 
 
 
@@ -271,7 +316,8 @@ int main(){
         b[5][2] = -1.0 - b[4][2];
         b[5][3] = -1.0 - b[4][3];
         b[5][4] = -1.0 - b[4][4];
-       //R_E[CSTR][eComp] =
+       
+	   //R_E[CSTR][eComp] =
        D[CSTR] = 6.1321 * sqrt(T_chips[CSTR]) * exp(-4870.0/(1.98 * T_chips[CSTR]));
 
        Vbdot[CSTR] = -sumR_S[CSTR]/ rhoS_Total;
@@ -341,38 +387,23 @@ int main(){
 
     //Wood chips temperature
 
-     dT_chips[CSTR] = ((Cp_s * M_sdot[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilondot[CSTR] + Cp_e[CSTR] * M_edot[CSTR] * epsilon[CSTR]) * T_chips[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vcdot * (Cp_s * M_s[CSTR-1] + Cp_e[CSTR-1] * M_e[CSTR-1] * epsilon[CSTR-1]) * (T_chips[CSTR-1] - T_chips[CSTR])/ (V_chips * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + dH_rxn * sumR_s/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + U * (T_free[CSTR] - T_chips[CSTR])/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vbdot[CSTR] * (Cp_f[CSTR] * M_f[CSTR] * T_free[CSTR])/ (V_chips * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + D[CSTR] * D_E[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) * deltaT;
+     dT_chips[CSTR] = ((Cp_s * M_sdot[CSTR] + Cp_e[CSTR] * M_e[CSTR] * d_epsilon[CSTR] + Cp_e[CSTR] * M_edot[CSTR] * epsilon[CSTR]) * T_chips[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vcdot * (Cp_s * M_s[CSTR-1] + Cp_e[CSTR-1] * M_e[CSTR-1] * epsilon[CSTR-1]) * (T_chips[CSTR-1] - T_chips[CSTR])/ (V_chips[CSTR] * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + dH_rxn * sumR_S[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + U * (T_free[CSTR] - T_chips[CSTR])/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR]) + Vbdot[CSTR] * (Cp_f[CSTR] * M_f[CSTR] * T_free[CSTR])/ (V_chips[CSTR] * (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) + D[CSTR] * D_E[CSTR]/ (Cp_s * M_s[CSTR] + Cp_e[CSTR] * M_e[CSTR] * epsilon[CSTR])) * deltaT;
      T_chips[CSTR] += dT_chips[CSTR];
 
      //Free-liquor temperature
-     dT_free[CSTR] = ((M_fdot[CSTR] * T_free[CSTR]) * M_f[CSTR] + (Vfdot[CSTR+1] * Cp_f[CSTR+1] * M_f[CSTR+1]) * T_free[CSTR+1]/ (V_free[CSTR] * Cp_f[CSTR] * M_f[CSTR]) - (Vfdot[CSTR]/ V_free[CSTR]) * T_free[CSTR] + U * (T_chips[CSTR] - T_free[CSTR]) * (1 - eta[CSTR])/ (Cp_f[CSTR] * M_f[CSTR] * eta[CSTR]) - Vbdot[CSTR] * T_free[CSTR]/ V_free[CSTR] + (D[CSTR] * D_F[CSTR] * (1 - eta[CSTR]))/ (Cp_f[CSTR] * M_f[CSTR] * eta[CSTR]) + (Cp_fext[CSTR] * M_fext[CSTR] * Vdot_ext) * T_ext/ (Cp_f[CSTR] * M_f[CSTR] * V_free[CSTR])) * deltaT;
+	 
+     dT_free[CSTR] = ((M_fdot[CSTR] * T_free[CSTR]) * M_f[CSTR] + (Vfdot[CSTR+1] * Cp_f[CSTR+1] * M_f[CSTR+1]) * T_free[CSTR+1]/ (V_free[CSTR] * Cp_f[CSTR] * M_f[CSTR]) - (Vfdot[CSTR]/ V_free[CSTR]) * T_free[CSTR] + U * (T_chips[CSTR] - T_free[CSTR]) * (1 - eta[CSTR])/ (Cp_f[CSTR] * M_f[CSTR] * eta[CSTR]) - Vbdot[CSTR] * T_free[CSTR]/ V_free[CSTR] + (D[CSTR] * D_F[CSTR] * (1 - eta[CSTR]))/ (Cp_f[CSTR] * M_f[CSTR] * eta[CSTR]) + (Cp_fext[CSTR] * M_fext[CSTR] * Vextdot[CSTR]) * T_ext/ (Cp_f[CSTR] * M_f[CSTR] * V_free[CSTR])) * deltaT;
      T_free[CSTR] += dT_free[CSTR];
   }
-
-
-
-
-
-
-
-
-   // dH_se = (Cp_s * M_s + Cp_e * M_e * epsilon[CSTR) * V_chips[CSTR * T_chips;
-    //Energy balance for wood chips
-  //  dH_se = Vcdot * ((Cp_s * M_s0 + Cp_e0 * M_e0 * epsilon[CSTR-1]) * T_chips[CSTR-1] - (Cp_s * M_s + Cp_e * M_e * epsilon[CSTR]) * T_chips[CSTR]) + (dH_rxn * sigmaR() + U * (T_f - T_chips[CSTR]))* V_chips[CSTR] + Vbdot[CSTR] * (Cp_f * M_f * T_f) + (k * A_T * D_E);
-  //  H_se += dH_se;
-
-    //Energy balance for free-liquor
-
-//    dH_f = Vfdot_0 * (Cp_f0 * M_f0 * T_f0) - Vfdot * (Cp_f * M_f * T_f) + U * V_chips[CSTR] * (T_chips[CSTR] - T_f) - Vbdot[CSTR] * (Cp_f * M_f * T_f) + (k * A_T * D_F) + (Vextdot * Cp_ext * M_ext * T_ext);
-
-   // H_f += dH_f;
-
-
-   // h_factor += exp(43.2 - 16115.0/T_top)*deltaT;
+ 
+ 
+  eta[CSTR] = V_free[CSTR]/ (Area[CSTR] * height[CSTR]);
+  
+  std::cout << "End of cycle \n" ; 
 
   }
 
-  //std::cout << dH_se << " " << h_factor << std::endl;*/
+  
   return 0;
 }
 
@@ -381,7 +412,7 @@ int main(){
         std::cin >> rhoS[i];
     }
 
-    kappa = (rhoS[0] + rhoS[1])/(0.00153* (rhoS[0] + + rhoS[1] + rhoS[2] + rhoS[3] + rhoS[4]));
+    kappa = (rhoS[0] + rhoS[1])/(0.00153* (rhoS[0] + rhoS[1] + rhoS[2] + rhoS[3] + rhoS[4]));
 
     yield = 600.0/ (rhoS[0] + + rhoS[1] + rhoS[2] + rhoS[3] + rhoS[4]);
 
