@@ -21,9 +21,9 @@ void init2Da(Init2D A[N][O])
     {
         for (int j=0; j<O; j++){
            A[i][j] = 0.0;
-           //std::cout <<i << " "<< A[i][j] << " " ;
+           ////std::cout <<i << " "<< A[i][j] << " " ;
         }
-        //std::cout << "\n";
+        ////std::cout << "\n";
     }
 }
 
@@ -34,9 +34,9 @@ void init2Db(Init2D A[N][P], double num)
     {
         for (int j=0; j<P; j++){
            A[i][j] = num;
-           //std::cout <<i << " "<< A[i][j] << " " ;
+           ////std::cout <<i << " "<< A[i][j] << " " ;
         }
-       // std::cout << "\n";
+       // //std::cout << "\n";
     }
 }
 
@@ -46,9 +46,37 @@ void init1D(Init1D A[N], double num)
     for (int i=0; i<N; i++)
     {
        A[i] = num;
-       //std::cout << i << " " << A[i] << " " << std::endl;
+       ////std::cout << i << " " << A[i] << " " << std::endl;
 
     }
+}
+
+template<class Init1D>
+double getVolume(Init1D Area[N], Init1D height[N]){
+  
+  double volume = 0.0;
+  for(int i=0; i<N; i++)
+  {
+    volume += Area[i] * height[i];
+  }
+  return volume;
+}
+
+template<class Init1D>
+double calculateHeight(Init1D height[N]){
+  double m_height =0.0;
+  for(int i=0; i<N; i++){
+    m_height += height[i];
+  }
+}
+
+template<class Init1D>
+void cumVol(Init1D Area[N], Init1D height[N], Init1D cumVolCSTR[N]){
+  cumVolCSTR[N-1] = Area[N-1] * height[N-1];
+  for(int i = N-2; i>=0; i--){
+    cumVolCSTR[i] = cumVolCSTR[i+1] + Area[i] * height[i];
+    std::cout << cumVolCSTR[i]<<"\n";
+  }
 }
 
 int main(){
@@ -166,6 +194,7 @@ int main(){
   double M_es[50], M_el[50], M_fs[50], M_fl[50], M_fdot[50];
   double V_chips[50], V_entrap[50], V_free[50];
   double T_chips[50], T_free[50], T_f0, T_ext;
+  double levelChips = 0.0;
   double U = 827.0, Vcdot, Vbdot[50], Vfdot_0, Vfdot[50], Vfdot_in[50], Vfdot_out[50], Vextdot[50];
   double epsilon[50], d_epsilon[50];
   double betaOHL, betaHSL, betaOHC;
@@ -173,6 +202,8 @@ int main(){
   double T_top, T_x;
   double h_factor = 0.0;
   double t, deltaT = 0.1;
+  double volDigester, heightTotal;
+  double cumVolCSTR[50];
 
   //Initialize all the arrays
 
@@ -193,11 +224,14 @@ int main(){
   init1D(sumR_E, 0.0);
   init1D(T_chips, 273.15);
   init1D(T_free, 273.15);
+  init1D(d_rhoS_sum, 0.0);
+  
   
   init2Db(d_rhoS, 0.0);
   init2Db(rhoS, 0.001);
   init2Db(rhoS_un, 0.0);
   init2Db(R_S, 0.0);
+  
   
   
   init2Da(d_rhoE);
@@ -207,15 +241,27 @@ int main(){
   init2Da(rhoF);
   
 
+  volDigester = getVolume(Area, height);
+  std::cout << volDigester << "\n";
+  
+  heightTotal = calculateHeight(height);
+  std::cout << heightTotal << "\n";
+  
+  cumVol(Area, height, cumVolCSTR);
 
   
-  for(t = 0.0; t < 0.10; t += deltaT){
+  for(t = 0.0; t < 3; t += deltaT){
+  
+  Vcdot = 10.0; //m3/min
+  levelChips += (Vcdot/volDigester) * deltaT/0.6;
+  std::cout << "%Level: " << levelChips <<std::endl; 
 
-
-   for(CSTR = 0; CSTR < maxCSTR; CSTR++){
+   for(CSTR = maxCSTR-1; CSTR >= 0; CSTR--){
       
+      //Area[CSTR] * height[CSTR]
       V_chips[CSTR] = (1-eta[CSTR]) * Area[CSTR] * height[CSTR];
       //std::cout << V_chips[CSTR] << " " << eta[CSTR] << std::endl;
+      
       
      //Solid-phase components
      for(sComp = 0; sComp < 5; sComp++){
@@ -223,23 +269,23 @@ int main(){
        k1[sComp] = 60.0 * A1[sComp] * exp(-E1[sComp]/ (R * T_chips[CSTR]));
        k2[sComp] = 60.0 * A2[sComp] * exp(-E2[sComp]/ (R * T_chips[CSTR]));
        
-       //std::cout << k1[sComp] << " " << k2[sComp] << std::endl;
+       ////std::cout << k1[sComp] << " " << k2[sComp] << std::endl;
        rhoS_un[CSTR][0] = 0.0;
        rhoS_un[CSTR][1] = 0.0;
        rhoS_un[CSTR][2] = 0.65;
        rhoS_un[CSTR][3] = 0.25;
        rhoS_un[CSTR][4] = 0.0;
-       
+       ////std::cout << R_S[CSTR][sComp] << " " ;
        R_S[CSTR][sComp] = -e_f[CSTR] * (k1[sComp] * rhoS[CSTR][0] + k2[sComp] * sqrt(rhoS[CSTR][0] * rhoS[CSTR][2])) * (rhoS[CSTR][sComp] - rhoS_un[CSTR][sComp]);
-       Vcdot = 10.0;
-       std::cout << R_S[CSTR][sComp] << " " ;
-       //std::cout << Vcdot << " ";
-  	   if(CSTR == 0){
+       
+       //std::cout << CSTR << " " <<rhoS[CSTR][0] <<" " << rhoS[CSTR][2] << std::endl;
+       ////std::cout << Vcdot << " ";
+  	   /*if(CSTR == 0){
     	   d_rhoS[CSTR][sComp] = (-(Vcdot/ V_chips[CSTR]) * (rhoS[CSTR][sComp]) + R_S[CSTR][sComp]) * deltaT;  
-  	   }
-  	   else{
+  	   }*/
+  	   //else{
   		   d_rhoS[CSTR][sComp] = ((Vcdot/ V_chips[CSTR]) * (rhoS[CSTR-1][sComp] - rhoS[CSTR][sComp]) + R_S[CSTR][sComp]) * deltaT;  
-  	   }
+  	   //}
        
        rhoS[CSTR][sComp] += d_rhoS[CSTR][sComp];
        //std::cout << rhoS[CSTR][sComp] << " ";
@@ -252,12 +298,12 @@ int main(){
 
      //Porosity Calculation
      epsilon[CSTR] = 1 - rhoS_sum[CSTR]/ rhoS_Total;
-
+     //std::cout << "Epsilon: " << epsilon[CSTR] << "\n";
      //Change in porosity
      d_epsilon[CSTR] = -d_rhoS_sum[CSTR]/ rhoS_Total;
-
+     //std::cout << "Change Epsilon: " << d_epsilon[CSTR] << "\n";
      V_entrap[CSTR] = epsilon[CSTR] * (1 - eta[CSTR]) * Area[CSTR] * height[CSTR];
-
+     //std::cout << "V entrap: " << V_entrap[CSTR] << " " << epsilon[CSTR] * (1 - eta[CSTR]) * Area[CSTR] * height[CSTR] << "\n";
      //Entrapped-liquor-phase components
      for(eComp = 0; eComp < 6; eComp++){
        
@@ -398,7 +444,7 @@ int main(){
  
   eta[CSTR] = V_free[CSTR]/ (Area[CSTR] * height[CSTR]);
   
-  std::cout << "End of cycle \n" ; 
+  //std::cout << "End of cycle \n" ; 
 
   }
 
@@ -415,7 +461,7 @@ int main(){
 
     yield = 600.0/ (rhoS[0] + + rhoS[1] + rhoS[2] + rhoS[3] + rhoS[4]);
 
-    std::cout << A1[0] << " " << kappa << " " << yield << std::endl;
+    //std::cout << A1[0] << " " << kappa << " " << yield << std::endl;
 
 */
 
